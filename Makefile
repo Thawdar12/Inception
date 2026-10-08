@@ -1,19 +1,35 @@
 NAME = inception
 
-.PHONY: all down build clean re
+COMPOSE = docker compose
+COMPOSE_FILE = ./srcs/docker-compose.yml
 
-all:
-	@docker-compose -f srcs/docker-compose.yml up -d
+DATA_DIR = /home/tswe-zin/data
+DB_DIR = $(DATA_DIR)/mariadb
+WP_DIR = $(DATA_DIR)/wordpress
 
-down:
-	@docker-compose -f srcs/docker-compose.yml down
+.PHONY: all build up down clean fclean re logs
+
+all: up
+
+up:
+	@mkdir -p $(DB_DIR) $(WP_DIR)
+	$(COMPOSE) -f $(COMPOSE_FILE) up -d
 
 build:
-	@docker-compose -f srcs/docker-compose.yml build
+	@mkdir -p $(DB_DIR) $(WP_DIR)
+	$(COMPOSE) -f $(COMPOSE_FILE) build
+
+down:
+	$(COMPOSE) -f $(COMPOSE_FILE) down
 
 clean:
-	@docker-compose -f srcs/docker-compose.yml down -v
+	$(COMPOSE) -f $(COMPOSE_FILE) down -v
 
-re:
-	make down
-	make build
+fclean:
+	$(COMPOSE) -f $(COMPOSE_FILE) down -v --rmi all --remove-orphans
+	sudo rm -rf $(DATA_DIR)
+
+re: fclean all
+
+logs:
+	$(COMPOSE) -f $(COMPOSE_FILE) logs -f
