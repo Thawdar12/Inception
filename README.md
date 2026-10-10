@@ -284,3 +284,7 @@ AI-generated suggestions were reviewed and adapted to the project's requirements
 ### Author
 
 - **42 login:** `tswe-zin`
+
+.gitignore
+/srcs/.env
+/secrets
