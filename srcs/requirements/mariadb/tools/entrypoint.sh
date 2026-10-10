@@ -17,7 +17,6 @@ chown -R mysql:mysql "$DATADIR"
 if [ ! -d "$DATADIR/mysql" ]; then
 echo "Initializing MariaDB database..."
 
-```
 mariadb-install-db \
     --user=mysql \
     --datadir="$DATADIR" \
@@ -47,7 +46,6 @@ echo "MariaDB is ready."
 mariadb \
     --socket="$SOCKET" \
     -u root <<EOF
-```
 
 CREATE DATABASE IF NOT EXISTS `${MYSQL_DATABASE}`;
 
@@ -61,7 +59,6 @@ FLUSH PRIVILEGES;
 
 EOF
 
-```
 echo "Database and user created."
 
 echo "Stopping temporary MariaDB..."
@@ -75,15 +72,15 @@ mariadb-admin \
 wait "$TEMP_PID"
 
 echo "MariaDB initialization complete."
-```
 
 else
-echo "MariaDB already initialized."
+    echo "MariaDB already initialized."
 fi
 
 echo "Starting MariaDB server..."
 
-exec mysqld 
---user=mysql 
---datadir="$DATADIR" 
---console
+exec mysqld \
+    --user=mysql \
+    --datadir="$DATADIR" \
+    --bind-address=0.0.0.0 \
+    --console

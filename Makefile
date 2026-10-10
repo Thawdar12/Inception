@@ -1,6 +1,6 @@
 NAME = inception
 
-COMPOSE = docker compose
+COMPOSE = docker-compose
 COMPOSE_FILE = ./srcs/docker-compose.yml
 
 DATA_DIR = /home/tswe-zin/data

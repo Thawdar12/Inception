@@ -10,9 +10,20 @@ WP_ADMIN_PASSWORD="$(cat /run/secrets/wp_admin_password)"
 WP_USER_PASSWORD="$(cat /run/secrets/wp_user_password)"
 WORDPRESS_DB_PASSWORD="$(cat /run/secrets/wp_db_password)"
 
+# Validate required environment variables
+
+: "${MYSQL_DATABASE:?MYSQL_DATABASE is required}"
+: "${MYSQL_USER:?MYSQL_USER is required}"
+: "${DOMAIN_NAME:?DOMAIN_NAME is required}"
+: "${WP_SITE_NAME:?WP_SITE_NAME is required}"
+: "${WP_ADMIN_USER:?WP_ADMIN_USER is required}"
+: "${WP_ADMIN_EMAIL:?WP_ADMIN_EMAIL is required}"
+: "${WP_USER:?WP_USER is required}"
+: "${WP_USER_EMAIL:?WP_USER_EMAIL is required}"
+
 # Database settings
 
-DB_HOST="mariadb:3306"
+DB_HOST="mariadb"
 
 mkdir -p /var/www/html
 cd /var/www/html
@@ -20,21 +31,20 @@ cd /var/www/html
 # Download WordPress if not already present
 
 if [ ! -f wp-load.php ]; then
-    echo "Downloading WordPress..."
-    wp core download 
-    --path=/var/www/html 
-    --allow-root
+    echo "Downloading WordPress..." 
+    wp --allow-root core download \
+        --path=/var/www/html
 fi
 
 # Wait for MariaDB
 
 echo "Waiting for MariaDB..."
 
-until mariadb 
-    -h"${DB_HOST}" 
-    -u"${MYSQL_USER}" 
-    -p"${WORDPRESS_DB_PASSWORD}" 
-    "${MYSQL_DATABASE}" 
+until mariadb \
+    -h"${DB_HOST}" \
+    -u"${MYSQL_USER}" \
+    -p"${WORDPRESS_DB_PASSWORD}" \
+    "${MYSQL_DATABASE}" \
     -e "SELECT 1;" >/dev/null 2>&1
 do
     echo "MariaDB is not ready. Waiting..."
@@ -43,11 +53,10 @@ done
 
 echo "MariaDB is ready."
 
-# Create wp-config.php
+# Create wp-config.php if it does not exist
 
 if [ ! -f wp-config.php ]; then
 echo "Creating wp-config.php..."
-
 
 wp config create \
     --dbname="${MYSQL_DATABASE}" \
@@ -57,17 +66,15 @@ wp config create \
     --path=/var/www/html \
     --allow-root
 
-
 fi
 
-# Install WordPress
+# Install WordPress if it is not already installed
 
-if ! wp core is-installed 
---path=/var/www/html 
---allow-root >/dev/null 2>&1
+if ! wp core is-installed \
+    --path=/var/www/html \
+    --allow-root >/dev/null 2>&1
 then
-echo "Installing WordPress..."
-
+    echo "Installing WordPress..."
 
 wp core install \
     --path=/var/www/html \
@@ -79,17 +86,15 @@ wp core install \
     --skip-email \
     --allow-root
 
-
 fi
 
-# Create normal WordPress user
+# Create normal WordPress user if it does not exist
 
-if ! wp user get "${WP_USER}" 
---path=/var/www/html 
---allow-root >/dev/null 2>&1
+if ! wp user get "${WP_USER}" \
+    --path=/var/www/html \
+    --allow-root >/dev/null 2>&1
 then
-echo "Creating WordPress user..."
-
+    echo "Creating WordPress user..."
 
 wp user create \
     "${WP_USER}" \
@@ -99,7 +104,6 @@ wp user create \
     --path=/var/www/html \
     --allow-root
 
-
 fi
 
 # Set permissions
@@ -108,11 +112,11 @@ echo "Setting permissions..."
 
 chown -R www-data:www-data /var/www/html
 
-find /var/www/html -type d -exec chmod 755 {} ;
-find /var/www/html -type f -exec chmod 644 {} ;
+find /var/www/html -type d -exec chmod 755 {} \;
+find /var/www/html -type f -exec chmod 644 {} \;
 
 echo "WordPress setup complete."
 
-# Start PHP-FPM
+# Start PHP-FPM in the foreground
 
 exec php-fpm8.2 -F

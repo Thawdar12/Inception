@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
 # Configure PHP-FPM to listen on port 9000
 
 RUN sed -i 's|^listen = .*|listen = 0.0.0.0:9000|' \
-    /etc/php/8.2/fpm/pool.d/[www.conf](http://www.conf)
+    /etc/php/8.2/fpm/pool.d/www.conf
 
 # Install WP-CLI
 
