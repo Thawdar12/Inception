@@ -284,3 +284,17 @@ AI-generated suggestions were reviewed and adapted to the project's requirements
 ### Author
 
 - **42 login:** `tswe-zin`
+
+.env
+
+DOMAIN_NAME=tswe-zin.42.fr
+
+MYSQL_DATABASE=wordpress
+MYSQL_USER=wpuser
+
+WP_SITE_NAME=Inception
+WP_ADMIN_USER=tswe-zin_manager
+WP_ADMIN_EMAIL=thawdarswezin2@gmail.com
+
+WP_USER=tswe-zin_author
+WP_USER_EMAIL=thawdarswezin12@gmail.com
