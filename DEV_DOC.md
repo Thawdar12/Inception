@@ -25,7 +25,7 @@ Verify the installation:
 
 ```bash
 docker --version
-docker compose version
+docker-compose version
 make --version
 ```
 
@@ -42,7 +42,6 @@ A typical project structure is:
 ├── .gitignore
 └── srcs/
     ├── docker-compose.yml
-    ├── .env
     └── requirements/
         ├── nginx/
         │   ├── Dockerfile
@@ -55,7 +54,7 @@ A typical project structure is:
             └── tools/
 ```
 
-A local `secrets/` directory may also be used, depending on the configuration.
+A local `secrets/` and directory may also be used, depending on the configuration.
 
 The exact directory layout should follow the project subject and the actual repository.
 
@@ -73,7 +72,7 @@ The exact directory layout should follow the project subject and the actual repo
 
 Configuration values can be supplied through environment variables.
 
-For example, the project may use:
+For example, this project uses:
 
 ```text
 MYSQL_DATABASE
@@ -117,7 +116,7 @@ Inspect the Makefile to confirm the actual targets and commands.
 A typical Compose build and start command is:
 
 ```bash
-docker compose -f srcs/docker-compose.yml up --build -d
+docker-compose -f srcs/docker-compose.yml up --build -d
 ```
 
 The path above is an example and should be adjusted if the Compose file is elsewhere.
@@ -125,27 +124,27 @@ The path above is an example and should be adjusted if the Compose file is elsew
 Check service status:
 
 ```bash
-docker compose ps
+docker-compose -f srcs/docker-compose.yml ps
 ```
 
 Follow logs:
 
 ```bash
-docker compose logs -f
+docker-compose -f -f srcs/docker-compose.yml logs
 ```
 
 To view an individual service:
 
 ```bash
-docker compose logs -f nginx
-docker compose logs -f wordpress
-docker compose logs -f mariadb
+docker-compose -f srcs/docker-compose.yml logs nginx
+docker-compose -f srcs/docker-compose.yml logs wordpress
+docker-compose -f srcs/docker-compose.yml logs mariadb
 ```
 
 Stop the infrastructure:
 
 ```bash
-docker compose down
+make down
 ```
 
 Use the same Compose file and project name consistently when managing the stack.
@@ -159,17 +158,10 @@ The project requires custom images built from an appropriate stable Alpine or De
 For example, a Dockerfile starts with a permitted base image declaration:
 
 ```dockerfile
-FROM debian:<required-version>
+FROM debian:bookworm
 ```
 
 Replace the placeholder with the exact permitted version.
-
-Build the images through Docker Compose:
-
-```bash
-docker compose build
-docker compose up -d
-```
 
 Verify the available images:
 
@@ -222,13 +214,13 @@ TLS must support at least TLS 1.2 or TLS 1.3. Certificate and private-key paths 
 Test the HTTPS connection:
 
 ```bash
-openssl s_client -connect YOUR_LOGIN.42.fr:443 -tls1_2
+openssl s_client -connect tswe-zin.42.fr:443 -tls1_2
 ```
 
 Alternatively, test TLS 1.3 where supported:
 
 ```bash
-openssl s_client -connect YOUR_LOGIN.42.fr:443 -tls1_3
+openssl s_client -connect tswe-zin.42.fr:443 -tls1_3
 ```
 
 A self-signed certificate may trigger a browser warning.
@@ -244,7 +236,7 @@ Its persistent volume stores the relevant WordPress files and content required b
 Check the service:
 
 ```bash
-docker compose logs wordpress
+docker-compose -f srcs/docker-compose.yml logs wordpress
 ```
 
 Verify that PHP-FPM is running and that NGINX can communicate with it over the configured internal network.
@@ -267,7 +259,7 @@ The initialization must be idempotent enough to avoid recreating the database or
 Check the logs:
 
 ```bash
-docker compose logs mariadb
+docker-compose -f srcs/docker-compose.yml logs mariadb
 ```
 
 Connect to the database from the MariaDB container using the credentials configured for the project.
@@ -275,7 +267,7 @@ Connect to the database from the MariaDB container using the credentials configu
 For example:
 
 ```bash
-docker compose exec mariadb mariadb -u root -p
+docker-compose -f srcs/docker-compose.yml exec mariadb mariadb -u root -p
 ```
 
 Then inspect the database:
@@ -299,7 +291,7 @@ docker volume ls
 docker volume inspect <volume-name>
 ```
 
-For this project, verify that the host-backed storage is configured to meet the required `/home/YOUR_LOGIN/data/` path convention.
+For this project, verify that the host-backed storage is configured to meet the required `/home/tswe-zin/data/` path convention.
 
 The actual bind-mount or volume configuration must be checked against the subject requirements.
 
@@ -335,9 +327,9 @@ After modifying a Dockerfile or service configuration, rebuild and restart the p
 For example:
 
 ```bash
-docker compose up --build -d
-docker compose ps
-docker compose logs
+docker-compose -f srcs/docker-compose.yml up --build -d
+docker-compose -f srcs/docker-compose.yml ps
+docker-compose -f srcs/docker-compose.yml logs
 ```
 
 For a port change, update the Compose port mapping and any related service configuration, then rebuild or recreate the affected service as needed.
@@ -345,7 +337,7 @@ For a port change, update the Compose port mapping and any related service confi
 For example, mapping host port 8443 to container port 443 would allow HTTPS access through:
 
 ```text
-https://YOUR_LOGIN.42.fr:8443
+https://tswe-zin.42.fr:8443
 ```
 
 Ensure the selected host port is available.
@@ -355,8 +347,8 @@ Ensure the selected host port is available.
 ### Containers are not running
 
 ```bash
-docker compose ps
-docker compose logs
+docker-compose -f srcs/docker-compose.yml ps
+docker-compose -f srcs/docker-compose.yml logs
 ```
 
 ### Network connectivity problems
@@ -385,22 +377,7 @@ Inspect the volume configuration and confirm that the application is writing dat
 Before restarting, validate the Compose configuration:
 
 ```bash
-docker compose config
+docker-compose -f srcs/docker-compose.yml config
 ```
 
 Resolve configuration errors before rebuilding.
-
-## 15. Final verification
-
-Before submission, verify:
-
-* All required services build from their own Dockerfiles.
-* The Compose stack starts without errors.
-* Only NGINX is exposed to the host on port 443.
-* HTTPS works with TLS 1.2 or TLS 1.3.
-* WordPress is installed and connected to MariaDB.
-* The database contains WordPress tables.
-* Both required persistent storage locations are correct.
-* Data survives container recreation and VM reboot.
-* Credentials are not committed to Git.
-* The stack can be rebuilt after a configuration change.

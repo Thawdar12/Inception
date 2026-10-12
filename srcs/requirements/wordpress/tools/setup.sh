@@ -22,8 +22,8 @@ WORDPRESS_DB_PASSWORD="$(cat /run/secrets/wp_db_password)"
 : "${WP_USER_EMAIL:?WP_USER_EMAIL is required}"
 
 # Database settings
-
-DB_HOST="mariadb"
+DB_HOST="${DB_HOST:-mariadb}"
+DB_PORT="${DB_PORT:-3306}"
 
 mkdir -p /var/www/html
 cd /var/www/html
@@ -31,23 +31,23 @@ cd /var/www/html
 # Download WordPress if not already present
 
 if [ ! -f wp-load.php ]; then
-    echo "Downloading WordPress..." 
+    echo "Downloading WordPress..."
     wp --allow-root core download \
         --path=/var/www/html
 fi
 
 # Wait for MariaDB
-
-echo "Waiting for MariaDB..."
+echo "Waiting for MariaDB at ${DB_HOST}:${DB_PORT}..."
 
 until mariadb \
     -h"${DB_HOST}" \
+    -P"${DB_PORT}" \
     -u"${MYSQL_USER}" \
     -p"${WORDPRESS_DB_PASSWORD}" \
     "${MYSQL_DATABASE}" \
     -e "SELECT 1;" >/dev/null 2>&1
 do
-    echo "MariaDB is not ready. Waiting..."
+    echo "MariaDB at ${DB_HOST}:${DB_PORT} is not ready. Waiting..."
     sleep 2
 done
 
@@ -56,16 +56,23 @@ echo "MariaDB is ready."
 # Create wp-config.php if it does not exist
 
 if [ ! -f wp-config.php ]; then
-echo "Creating wp-config.php..."
+    echo "Creating wp-config.php..."
 
-wp config create \
-    --dbname="${MYSQL_DATABASE}" \
-    --dbuser="${MYSQL_USER}" \
-    --dbpass="${WORDPRESS_DB_PASSWORD}" \
-    --dbhost="${DB_HOST}" \
-    --path=/var/www/html \
-    --allow-root
+    wp config create \
+        --dbname="${MYSQL_DATABASE}" \
+        --dbuser="${MYSQL_USER}" \
+        --dbpass="${WORDPRESS_DB_PASSWORD}" \
+        --dbhost="${DB_HOST}:${DB_PORT}" \
+        --path=/var/www/html \
+        --allow-root
+else
+    echo "wp-config.php already exists."
 
+    # Keep the database host and port aligned with the environment
+    wp config set DB_HOST "${DB_HOST}:${DB_PORT}" \
+        --type=constant \
+        --path=/var/www/html \
+        --allow-root
 fi
 
 # Install WordPress if it is not already installed
@@ -76,16 +83,15 @@ if ! wp core is-installed \
 then
     echo "Installing WordPress..."
 
-wp core install \
-    --path=/var/www/html \
-    --url="https://${DOMAIN_NAME}" \
-    --title="${WP_SITE_NAME}" \
-    --admin_user="${WP_ADMIN_USER}" \
-    --admin_password="${WP_ADMIN_PASSWORD}" \
-    --admin_email="${WP_ADMIN_EMAIL}" \
-    --skip-email \
-    --allow-root
-
+    wp core install \
+        --path=/var/www/html \
+        --url="https://${DOMAIN_NAME}" \
+        --title="${WP_SITE_NAME}" \
+        --admin_user="${WP_ADMIN_USER}" \
+        --admin_password="${WP_ADMIN_PASSWORD}" \
+        --admin_email="${WP_ADMIN_EMAIL}" \
+        --skip-email \
+        --allow-root
 fi
 
 # Create normal WordPress user if it does not exist
@@ -96,14 +102,13 @@ if ! wp user get "${WP_USER}" \
 then
     echo "Creating WordPress user..."
 
-wp user create \
-    "${WP_USER}" \
-    "${WP_USER_EMAIL}" \
-    --role=author \
-    --user_pass="${WP_USER_PASSWORD}" \
-    --path=/var/www/html \
-    --allow-root
-
+    wp user create \
+        "${WP_USER}" \
+        "${WP_USER_EMAIL}" \
+        --role=author \
+        --user_pass="${WP_USER_PASSWORD}" \
+        --path=/var/www/html \
+        --allow-root
 fi
 
 # Set permissions

@@ -25,7 +25,7 @@ If your Makefile uses a different target, use the target defined in the project.
 To check the service status:
 
 ```bash
-docker compose ps
+docker-compose -f srcs/docker-compose.yml ps
 ```
 
 All required services should be running.
@@ -34,9 +34,7 @@ All required services should be running.
 
 Open a browser and visit:
 
-https://YOUR_LOGIN.42.fr
-
-Replace `YOUR_LOGIN` with the configured 42 login.
+https://tswe-zin.42.fr
 
 The website should display the configured WordPress site rather than the initial WordPress installation screen.
 
@@ -48,7 +46,7 @@ HTTP access through port 80 is not intended to be available.
 
 Visit:
 
-https://YOUR_LOGIN.42.fr/wp-admin
+https://tswe-zin.42.fr/wp-admin
 
 Sign in using the WordPress administrator credentials configured during setup.
 
@@ -62,45 +60,53 @@ From the dashboard, an authorized administrator can:
 
 Keep administrator credentials private.
 
-## 5. Managing credentials
+## 5. Required Local Files
 
-Database passwords and other sensitive values must not be committed to the Git repository.
+Before starting the project, create a `.env` file and a `secrets/` folder in the project directory.
 
-When Docker secrets are used, the database service reads its passwords from the configured secret files mounted under `/run/secrets/`.
+- **`.env`**: Stores environment variables such as the domain name, database name, database username, and other required configuration values.
+- **`secrets/`**: Stores sensitive credentials in separate files, such as database root passwords, database passwords, and WordPress user passwords.
 
-For example:
+Example project structure:
 
 ```text
-/run/secrets/db_root_password
-/run/secrets/db_password
+.
+├── .env
+├── secrets/
+│   ├── db_root_password.txt
+│   ├── db_password.txt
+│   ├── wp_admin_password.txt
+│   ├── wp_user_password.txt
+│   └── wp_db_password.txt
+└── srcs/
+    └── docker-compose.yml
 ```
 
-The actual secret source paths are defined by the Docker Compose configuration.
+Make sure to replace example values with your own configuration and passwords. These files must remain local and must not be committed to the Git repository. Add `.env` and `secrets/` to `.gitignore`.
 
-To change a password, update the appropriate secret and follow the project's documented database password rotation procedure. Changing a secret file alone may not change an existing database account password.
-
-Never publish passwords in documentation, source code, screenshots, or Git history.
+**Important:** Creating these files is not enough by itself. Ensure that your Docker Compose configuration references the correct paths and that your application scripts read the secrets where required.
 
 ## 6. Basic service checks
 
 Check running containers:
 
 ```bash
-docker compose ps
+docker-compose -f srcs/docker-compose.yml ps
 ```
 
 View logs:
 
 ```bash
-docker compose logs nginx
-docker compose logs wordpress
-docker compose logs mariadb
+docker-compose -f srcs/docker-compose.yml logs nginx
+docker-compose -f srcs/docker-compose.yml logs wordpress
+docker-compose -f srcs/docker-compose.yml logs mariadb
 ```
 
 Check Docker networks:
 
 ```bash
 docker network ls
+docker network inspect srcs_inception 
 ```
 
 Check Docker volumes:
@@ -119,12 +125,6 @@ Stop the services using:
 make down
 ```
 
-Alternatively, use:
-
-```bash
-docker compose down
-```
-
 This stops and removes the Compose containers and network created for the project. Named volumes normally remain unless explicitly removed.
 
 **Do not remove persistent volumes** if you want to keep the WordPress website and MariaDB database.
@@ -132,7 +132,7 @@ This stops and removes the Compose containers and network created for the projec
 Avoid commands such as:
 
 ```bash
-docker compose down -v
+make fclean
 ```
 
 unless you intentionally want to remove the Compose-managed volumes and understand the data-loss consequences.
@@ -158,8 +158,8 @@ Verify that the website and its previous content are still available.
 Check:
 
 ```bash
-docker compose ps
-docker compose logs nginx
+docker-compose -f srcs/docker-compose.yml ps
+docker-compose -f srcs/docker-compose.yml logs nginx
 ```
 
 Verify that port 443 is available and the hostname resolves correctly.
@@ -169,8 +169,8 @@ Verify that port 443 is available and the hostname resolves correctly.
 Check:
 
 ```bash
-docker compose logs wordpress
-docker compose logs mariadb
+docker-compose -f srcs/docker-compose.yml logs wordpress
+docker-compose -f srcs/docker-compose.yml logs mariadb
 ```
 
 Verify the database hostname, database name, username, password, network, and secret mounts.

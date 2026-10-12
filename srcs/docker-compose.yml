@@ -24,6 +24,9 @@ services:
     restart: on-failure
     env_file:
       - .env
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
     depends_on:
       - mariadb
     volumes:
